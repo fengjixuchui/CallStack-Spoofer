@@ -4,10 +4,10 @@
 #include <ntdef.h>
 #include <xtr1common> 
 #else
+#include <Windows.h>
 #include <utility>
 #endif
 #include  <Intrin.h> 
-
 
 /*
  *  Copyright 2022 Barracudach
@@ -25,19 +25,19 @@
  * limitations under the License.
  */
 
- //From repository: https://github.com/Barracudach/CallStack-Spoofer
- //Supports 2 modes: kernelmode and usermode(x64)
- //For kernel- disable Control Flow Guard (CFG) /guard:cf 
- //usermode c++17 and above
- //kernelmode c++14 and above
+ // === FAQ === documentation is available at https://github.com/Barracudach
+//Supports 2 modes: kernelmode and usermode(x64)
+//For kernel- disable Control Flow Guard (CFG) /guard:cf 
+//usermode c++17 and above
+//kernelmode c++14 and above
 
 
 
 #define SPOOF_FUNC CallSpoofer::SpoofFunction spoof(_AddressOfReturnAddress());
 #ifdef _KERNEL_MODE
-#define SPOOF_CALL(ret_type,name) (CallSpoofer::SafeCall<ret_type,decltype(name)>(&name))
+#define SPOOF_CALL(ret_type,name) (CallSpoofer::SafeCall<ret_type,std::remove_reference_t<decltype(*name)>>(name))
 #else
-#define SPOOF_CALL(name) (CallSpoofer::SafeCall<decltype(name)>(&name))
+#define SPOOF_CALL(name) (CallSpoofer::SafeCall<std::remove_reference_t<decltype(name)>>(name))
 #endif
 
 
@@ -131,7 +131,7 @@ namespace CallSpoofer
 	template <typename Func, typename ...Args>
 	typename std::invoke_result<Func, Args...>::type
 #endif
-	__declspec(safebuffers) ShellCodeGenerator(Func f, Args&... args)
+		__declspec(safebuffers)ShellCodeGenerator(Func f, Args&... args)
 	{
 #ifdef _KERNEL_MODE
 		using this_func_type = decltype(ShellCodeGenerator<RetType, Func, Args&...>);
@@ -164,16 +164,18 @@ namespace CallSpoofer
 
 
 #ifdef _KERNEL_MODE
-	template<typename RetType, class Func >
+	template<typename RetType, class Func>
 #else
 	template<class Func >
 #endif
 	class SafeCall
 	{
+
 		Func* funcPtr;
 
 	public:
 		SafeCall(Func* func) :funcPtr(func) {}
+
 
 		template<typename... Args>
 		__forceinline decltype(auto) operator()(Args&&... args)
@@ -206,6 +208,7 @@ namespace CallSpoofer
 #else
 					//std::cout << "Found allocated generator" << std::endl;
 #endif
+
 					p_shellcode = reinterpret_cast<shell_code_generator_type>(alloc_generator[index]);
 					break;
 				}
@@ -219,6 +222,7 @@ namespace CallSpoofer
 #else	
 				//std::cout << "Alloc generator" << std::endl;
 #endif
+
 				p_shellcode = (shell_code_generator_type)LocateShellCode(self_addr);
 				orig_generator[count] = self_addr;
 				alloc_generator[count] = p_shellcode;
@@ -227,10 +231,9 @@ namespace CallSpoofer
 
 			if (!p_shellcode)
 			{
-				//è âñå è ïèçäåö
 				//DbgPrint("!p_shellcode");
-
 			}
+
 			return p_shellcode(funcPtr, args...);
 		}
 	};

@@ -2,7 +2,7 @@
 
 A simple tool that will make it harder to find your code by stackwalker or other stack analyze.<br/>
 This works both in the kernel-mode and in the user-mode.<br/>
-Safe with runtime exceptions.<br/>
+~~Safe with runtime exceptions.~~<br/>
 
 [PoC](#PoC)
 
@@ -16,6 +16,11 @@ SPOOF_CALL(Beep)(500, 500);//spoof system call
 ```cpp
 SPOOF_FUNC;//spoof current function
 SPOOF_CALL(NTSTATUS,NtClose)(handle);//spoof system call
+```
+### call by pointer
+```cpp
+BOOL (WINAPI * beep)(_In_ DWORD dwFreq,_In_ DWORD dwDuration)=&Beep;
+SPOOF_CALL(beep)(500,500);
 ```
 
 ### presetting
